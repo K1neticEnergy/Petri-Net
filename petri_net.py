@@ -43,9 +43,9 @@ class Out(Arc):
         self.place.token -= self.amount
 
     def show(self,canvas,trans_coor):
-        ratio = (trans_coor[0] - self.place.x)**2 / ((trans_coor[1] - self.place.y)**2 + (trans_coor[0] - self.place.x)**2)
-        x_offset = Place.radius * sqrt(ratio)
-        y_offset = Place.radius * sqrt(1 - ratio)
+        # ratio = (trans_coor[0] - self.place.x)**2 / ((trans_coor[1] - self.place.y)**2 + (trans_coor[0] - self.place.x)**2)
+        # x_offset = Place.radius * sqrt(ratio)
+        # y_offset = Place.radius * sqrt(1 - ratio)
         canvas.create_line(self.place.x, self.place.y, trans_coor[0], trans_coor[1], arrow=LAST)
 
 class In(Arc):
