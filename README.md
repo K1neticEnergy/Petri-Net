@@ -11,7 +11,7 @@
 
 ## Notes
 
-UMP:
+UML:
 
 1. Place
     - label : string
