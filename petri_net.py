@@ -4,6 +4,8 @@ from math import cos, sin, sqrt, acos
 
 HEIGH = 486
 WIDTH = 864
+OPENING_TIME = 2000
+TRANSITION_TIME = 1000
 
 class Place:
     '''
@@ -37,13 +39,19 @@ class Place:
 
 class Arc:
     '''
-
+        An arc connects a place and a transition.
+        Properties:
+            - place: place in a petri net
+            - amount: set throughput limit
     '''
     def __init__(self,place,amount=1):
         self.place = place
         self.amount = amount
 
 class Out(Arc):
+    '''
+        An output arc derives 
+    '''
     def trigger(self):
         self.place.token -= self.amount
 
@@ -52,9 +60,8 @@ class Out(Arc):
         x0_offset = Place.radius * cos(angle) * (1 if (x - self.place.x >= 0) else -1)
         y0_offset = Place.radius * sin(angle) * (1 if (y - self.place.y >= 0) else -1)
         x_offset = Transition.w * cos(angle) * (1 if (x - self.place.x >= 0) else -1)
-        # x_offset = x_offset if (x_offset <= Transition.w) else Transition.w
         y_offset = Transition.h * sin(angle) * (1 if (y - self.place.y >= 0) else -1)
-        # y_offset = y_offset if (y_offset <= Transition.h) else Transition.h
+
         canvas.create_line(self.place.x + x0_offset, self.place.y + y0_offset, x - x_offset, y - y_offset, arrow=LAST)
 
 class In(Arc):
@@ -66,9 +73,8 @@ class In(Arc):
         x0_offset = Place.radius * cos(angle) * (1 if (x - self.place.x >= 0) else -1)
         y0_offset = Place.radius * sin(angle) * (1 if (y - self.place.y >= 0) else -1)
         x_offset = Transition.w * cos(angle) * (1 if (x - self.place.x >= 0) else -1)
-        # x_offset = x_offset if (x_offset <= Transition.w / 2) else Transition.w / 2
         y_offset = Transition.h * sin(angle) * (1 if (y - self.place.y >= 0) else -1)
-        # y_offset = y_offset if (y_offset <= Transition.h / 2) else Transition.h / 2
+
         canvas.create_line(self.place.x + x0_offset, self.place.y + y0_offset,x - x_offset, y - y_offset, arrow=FIRST)
 
 class Transition:
@@ -126,15 +132,15 @@ class PetriNet:
             if t.fire() :
                 print("{} firing!".format(t.label))
                 print(" => {}\n".format([pl.token for pl in self.places]))
-                self.canvas.after(500,self.run,windows,firing_sequence,i + 1,auto_close,done)
+                self.canvas.after(TRANSITION_TIME,self.run,windows,firing_sequence,i + 1,auto_close,done)
             else:
                 print("{} stucked. Switching...".format(t.label))
-                self.canvas.after(200,self.run,windows,firing_sequence,i + 1,auto_close,done)
+                self.canvas.after(TRANSITION_TIME / 2,self.run,windows,firing_sequence,i + 1,auto_close,done)
         else:
             print("deadlock")
             print("final {}\n".format([p.token for p in self.places]))
             done = True
-        if done and auto_close: windows.after(1000, windows.destroy)
+        if done and auto_close: windows.after(OPENING_TIME, windows.destroy)
 
     def reach(self, find_all=True):
         ts = []
@@ -216,7 +222,7 @@ def problem1a():
 
     # petri_net = PetriNet(trans,places,canvas)
     for i in trans: trans[i].show()
-    windows.after(1000,windows.destroy)
+    windows.after(OPENING_TIME,windows.destroy)
     [p.show() for p in places]
     windows.mainloop()
 
@@ -284,7 +290,7 @@ def problem1b():
     except:
         print('Invalid input')
     [p.show() for p in places]
-    windows.after(2000,windows.destroy)
+    windows.after(OPENING_TIME,windows.destroy)
     windows.mainloop()
 
 def problem1b_():
@@ -345,7 +351,7 @@ def problem1b_():
         print('Invalid input')
     petri_net.reach()
     [p.show() for p in places]
-    windows.after(1000,windows.destroy)
+    windows.after(OPENING_TIME,windows.destroy)
     windows.mainloop()
 
 def problem1():
@@ -539,7 +545,7 @@ def problem4():
 
     petri_net = PetriNet(trans,places,canvas)
     petri_net.reach(False)
-    windows.after(1000,windows.destroy)
+    windows.after(OPENING_TIME,windows.destroy)
     [p.show() for p in places]
     windows.mainloop()
 
