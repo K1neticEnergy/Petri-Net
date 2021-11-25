@@ -1,33 +1,52 @@
-# Petri Net (Project Bor)
+# Petri Net with Visualization
 
-## Reference:
+## Description
 
-- [Wikipedia](https://en.wikipedia.org/wiki/Petri_net)
+An implementation of a Petri Net in python with homework-solving visualization
 
-## Technology:
+## Prerequisites
 
-- Python
--
+- tkinter : a python library to create GUI 
 
-## Notes
+- math: trigonometric calculation
 
-UML:
+Use ```pip``` command to install those libraries above.
 
-1. Place
-    - label : string
-    - token : int
-    - 
-    - coordinate (for visual)
-2. Arc
-    - place: Place
-    - amount: int
-    - trigger: 
-    - coordinate (for visual)
+```console
+    pip install --upgrade pip
+    pip install tkinter math
+```
 
-3. Transition
-    - label : string
-    - input : list of input arc
-    - output: list of output arc
-    + enabled : determine a transition is ready to fire
-    + fire : when enabled, tokens which are set amount to be taken in each input arc are distributed to each output arc
-    - coordinate (for visual)
+## Structure
+
+### **UML Class Diagram** 
+![UML class](./UML_class.png)
+
+
+## Algorithm
+
+### Find all reachable markings of a petri net (or construct a transition system from a petri net)
+
+Strategy: Since each marking has at most n next markings in case of at most n enabled transitions, we will apply Greedy's algorithm in the form of Breadth-first Search (BFS) algorithm. A Queue stores next transitions of the front and iteratively pops front after finding all enabled markings until a queue is empty. 
+
+Pseudo-code:
+```code
+Function reach()
+    ts as a list
+    transition as a dictionary
+    reachable_marking as a queue
+    Assign initial markings to the queue
+    while reachable_marking is not empty
+        front = reachable_marking.front()
+        for name in transitions
+            if transitions[name].fire():
+                retrieve marking from places
+                if marking is not in reachable_marking and ts:
+                    reachable_marking.push(marking)
+        reachable_marking.pop()
+        ts.push(front)
+    return ts
+```
+
+## Apply implementation into problemset
+### Problem 1

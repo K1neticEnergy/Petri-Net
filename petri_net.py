@@ -1,5 +1,4 @@
 from tkinter import Tk, Canvas, Frame, BOTH, constants, FIRST, LAST
-import time
 from math import cos, sin, sqrt, acos
 
 HEIGH = 486
@@ -13,8 +12,11 @@ class Place:
         Properties:
             - label: name of a place
             - token: number of token holding
-            - (visualize)
+            - x,y: 2d-coordinate
+            - canvas: where to illustrate petri-net
+            - tks = illustrated tokens
         Method:
+            - show: draw and update a place
     '''
     radius = 30
 
@@ -25,16 +27,17 @@ class Place:
         self.x = x
         self.y = y
         self.canvas.create_oval(self.x - self.radius, self.y - self.radius, self.x + self.radius, self.y + self.radius)
-        dir_x = [0,0.5, 0,-0.5,0,1, 0,-1]
-        dir_y = [0.5,0,-0.5, 0,1,0,-1, 0]
-        self.tks = [self.canvas.create_oval(self.x - 5 + dir_x[i%8] * 20, self.y - 5 + dir_y[i%8] * 20, self.x + 5 + dir_x[i%8] * 20, self.y + 5 + dir_y[i%8] * 20,fill='red') for i in range(0, self.token)]
+        dir_x = [0,0.5,-0.5, 0.5,-0.5,0,1, 0,-1,1]
+        dir_y = [0,0.5, 0.5,-0.5,-0.5,1,0,-1, 0,1]
+        self.tks = [self.canvas.create_oval(self.x - 5 + dir_x[i%10] * 15, self.y - 5 + dir_y[i%10] * 15, self.x + 5 + dir_x[i%10] * 15, self.y + 5 + dir_y[i%10] * 15,fill='red') for i in range(0, self.token)]
+        self.canvas.create_text(x, y - self.radius - 10, text=label, fill="black", font=('Helvetica 13 bold'))
 
     def show(self):
         if self.tks: self.tks = [self.canvas.delete(tk) for tk in self.tks]
-        dir_x = [0,0.5, 0,-0.5,0,1, 0,-1]
-        dir_y = [0.5,0,-0.5, 0,1,0,-1, 0]
-        self.tks = [self.canvas.create_oval(self.x - 5 + dir_x[i%8] * 20, self.y - 5 + dir_y[i%8] * 20, self.x + 5 + dir_x[i%8] * 20, self.y + 5 + dir_y[i%8] * 20,fill='red') for i in range(0, self.token)]
-        self.loop = self.canvas.after(1,self.show)
+        dir_x = [0,0.5,-0.5, 0.5,-0.5,0,1, 0,-1,1]
+        dir_y = [0,0.5, 0.5,-0.5,-0.5,1,0,-1, 0,1]
+        self.tks = [self.canvas.create_oval(self.x - 5 + dir_x[i%10] * 15, self.y - 5 + dir_y[i%10] * 15, self.x + 5 + dir_x[i%10] * 15, self.y + 5 + dir_y[i%10] * 15,fill='red') for i in range(0, self.token)]
+        self.canvas.after(1,self.show)
 
 
 class Arc:
@@ -50,7 +53,10 @@ class Arc:
 
 class Out(Arc):
     '''
-        An output arc derives 
+        An output arc derives from an arc. The arrow of the arc points away of a place
+        Method:
+            - trigger: take an amount of token(s) from each input places every call
+            - show: illustrate an output arc.
     '''
     def trigger(self):
         self.place.token -= self.amount
@@ -63,8 +69,17 @@ class Out(Arc):
         y_offset = Transition.h * sin(angle) * (1 if (y - self.place.y >= 0) else -1)
 
         canvas.create_line(self.place.x + x0_offset, self.place.y + y0_offset, x - x_offset, y - y_offset, arrow=LAST)
+        canvas.create_text((self.place.x + x) // 2, (self.place.y + y) //2 - 10, 
+            text=str(self.amount), fill="black", font=('Helvetica 13 bold'))
+
 
 class In(Arc):
+    '''
+        An input arc derives from an arc. The arrow of the arc points to a place
+        Method:
+            - trigger: distribute an amount of token(s) to each output places
+            - show: illustrate an input arc. 
+    '''
     def trigger(self): 
         self.place.token += self.amount
     
@@ -76,10 +91,20 @@ class In(Arc):
         y_offset = Transition.h * sin(angle) * (1 if (y - self.place.y >= 0) else -1)
 
         canvas.create_line(self.place.x + x0_offset, self.place.y + y0_offset,x - x_offset, y - y_offset, arrow=FIRST)
+        canvas.create_text((self.place.x + x) // 2 + 10 * (1 if (x - self.place.x >= 0) else 0), 
+            (self.place.y + y) //2 + 10 * (1 if (y - self.place.y >= 0) else -1), text=str(self.amount), fill="black", font=('Helvetica 13 bold'))
 
 class Transition:
     '''
-
+        Transitions are the active nodes of a Petri net
+        Properties:
+            - label   : name of a transition
+            - arcs    : list of directed arcs
+            - out_arcs: list of output arc
+        Methods:
+            - enabled : determine a transition is ready to fire
+            - fire    : when enabled, tokens which are set amount to be taken in each input arc are distributed to each output arc
+            - show    : illustrate transitions and related arcs
     '''
     h = 30
     w = 30
@@ -111,10 +136,14 @@ class Transition:
 
         self.canvas.create_polygon( self.x - self.w, self.y - self.h, self.x - self.w, 
             self.y + self.h, self.x + self.w, self.y + self.h, self.x + self.w, self.y - self.h, fill = 'blue')
+        self.canvas.create_text(self.x, self.y + self.h + 10, text=self.label, fill="black", font=('Helvetica 13 bold'))
         for i in self.arcs:
             i.show(self.canvas,self.x,self.y)
  
 class PetriNet:
+    '''
+        A petri net is a structure
+    '''
     def __init__(self,transitions,places,canvas):
         self.transitions = transitions
         self.places = places
@@ -135,30 +164,31 @@ class PetriNet:
                 self.canvas.after(TRANSITION_TIME,self.run,windows,firing_sequence,i + 1,auto_close,done)
             else:
                 print("{} stucked. Switching...".format(t.label))
-                self.canvas.after(TRANSITION_TIME / 2,self.run,windows,firing_sequence,i + 1,auto_close,done)
+                self.canvas.after(TRANSITION_TIME // 2,self.run,windows,firing_sequence,i + 1,auto_close,done)
         else:
             print("deadlock")
             print("final {}\n".format([p.token for p in self.places]))
             done = True
         if done and auto_close: windows.after(OPENING_TIME, windows.destroy)
 
-    def reach(self, find_all=True):
+    def reach(self, trans_once=False):
         ts = []
         reachable_markings = []
+        visited = {key:False for key in self.transitions.keys()}
         reachable_markings.append([p.token for p in self.places])
         while len(reachable_markings) != 0:
             front = reachable_markings[0]
-            reachable_markings.pop(0)
             for name in self.transitions:
                 for p,t in zip(self.places,front):
                     p.token = t
                 t = self.transitions[name]
-                if(t.fire()):
+                if(t.fire() and not visited[name]):
+                    if trans_once: visited[name] = True
                     lst = [p.token for p in self.places]
                     print(front, "firing "+ name + " => ",lst )
                     if lst not in ts and lst not in reachable_markings: reachable_markings.append(lst)
+            reachable_markings.pop(0)
             ts.append(front)
-            if not find_all: break
         for p,t in zip(self.places,ts[0]):
             p.token = t           
         return ts
@@ -166,12 +196,13 @@ class PetriNet:
 def make_parser():
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('--firings', type=int)
+    parser.add_argument('--delay', type=int)
     parser.add_argument('--marking', type=int, nargs='+')
     return parser
 
 def problem1a():
     windows = Tk()
+    windows.title = "Petri net - Problem 1a"
     canvas = Canvas(windows, bg="white",
            height=HEIGH, width=WIDTH)
     canvas.pack()
@@ -228,6 +259,7 @@ def problem1a():
 
 def problem1b():
     windows = Tk()
+    windows.title = "Petri net - Problem 1b - Task 1"
     canvas = Canvas(windows, bg="white",
            height=HEIGH, width=WIDTH)
     canvas.pack()
@@ -295,6 +327,7 @@ def problem1b():
 
 def problem1b_():
     windows = Tk()
+    windows.title = "Petri net - Problem 1b - Task 2"
     canvas = Canvas(windows, bg="white",
            height=HEIGH, width=WIDTH)
     canvas.pack()
@@ -367,6 +400,7 @@ def problem2(firings):
     print('Problem 2: ')
     print('+++++++++++++++++++++++++++++++++++')
     windows = Tk()
+    windows.title = "Petri net - Problem 2"
     canvas = Canvas(windows, bg="white",
         height=HEIGH, width=WIDTH)
     canvas.pack()
@@ -408,7 +442,7 @@ def problem2(firings):
     from random import choice
     firing_sequence = [choice(list(trans.keys())) for _ in range(firings)]
     petri_net = PetriNet(trans,places,canvas)
-    print(petri_net.reach())
+    petri_net.reach()
     petri_net.run(windows,firing_sequence, 0)
     windows.mainloop()
 
@@ -416,6 +450,7 @@ def problem3(firings):
     print('Problem 3: ')
     print('+++++++++++++++++++++++++++++++++++')
     windows = Tk()
+    windows.title = "Petri net - Problem 3"
     canvas = Canvas(windows, bg="white",
         height=HEIGH, width=WIDTH)
     canvas.pack()
@@ -486,6 +521,7 @@ def problem4():
     print('Problem 4: ')
     print('+++++++++++++++++++++++++++++++++++')
     windows = Tk()
+    windows.title = "Petri net - Problem 4"
     canvas = Canvas(windows, bg="white",
         height=HEIGH, width=WIDTH)
     canvas.pack()
@@ -544,9 +580,9 @@ def problem4():
     for i in trans: trans[i].show()
 
     petri_net = PetriNet(trans,places,canvas)
-    petri_net.reach(False)
-    windows.after(OPENING_TIME,windows.destroy)
+    petri_net.reach(True)
     [p.show() for p in places]
+    windows.after(OPENING_TIME,windows.destroy)
     windows.mainloop()
 
 
