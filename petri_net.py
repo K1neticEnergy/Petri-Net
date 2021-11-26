@@ -55,7 +55,7 @@ class Out(Arc):
     '''
         An output arc derives from an arc. The arrow of the arc points away of a place
         Method:
-            - trigger: take an amount of token(s) from each input places every call
+            - trigger: take an amount of token(s) from an input place every call
             - show: illustrate an output arc.
     '''
     def trigger(self):
@@ -101,6 +101,8 @@ class Transition:
             - label   : name of a transition
             - arcs    : list of directed arcs
             - out_arcs: list of output arc
+            - x,y     : coordinate on a canvas
+            - canvas  : where to illustrate petri-net 
         Methods:
             - enabled : determine a transition is ready to fire
             - fire    : when enabled, tokens which are set amount to be taken in each input arc are distributed to each output arc
@@ -116,33 +118,52 @@ class Transition:
         self.x = x
         self.y = y
         self.canvas = canvas
+        self.canvas.create_polygon( self.x - self.w, self.y - self.h, self.x - self.w, 
+            self.y + self.h, self.x + self.w, self.y + self.h, self.x + self.w, self.y - self.h, fill = 'blue')
+        self.canvas.create_text(self.x, self.y + self.h + 10, text=self.label, fill="black", font=('Helvetica 13 bold'))
+        self.is_fired = False
 
 
     def enabled(self):
+        self.is_fired = False
         for i in self.out_arcs:
             if i.place.token == 0: 
                 return False
         return True
     
     def fire(self):
+        self.is_fired = False
         for i in self.out_arcs:
             if i.place.token == 0: 
                 return False
-        
-        [i.trigger() for i in self.arcs]    
+        [i.trigger() for i in self.arcs]
+        self.is_fired = True
         return True
 
-    def show(self):
-
-        self.canvas.create_polygon( self.x - self.w, self.y - self.h, self.x - self.w, 
+    def show(self,dynamic=True):
+        if self.is_fired: 
+            self.canvas.create_polygon( self.x - self.w, self.y - self.h, self.x - self.w, 
+                self.y + self.h, self.x + self.w, self.y + self.h, self.x + self.w, self.y - self.h, fill = 'green')
+        elif self.enabled(): self.canvas.create_polygon( self.x - self.w, self.y - self.h, self.x - self.w, 
+                self.y + self.h, self.x + self.w, self.y + self.h, self.x + self.w, self.y - self.h, fill = 'red')
+        else: self.canvas.create_polygon( self.x - self.w, self.y - self.h, self.x - self.w, 
             self.y + self.h, self.x + self.w, self.y + self.h, self.x + self.w, self.y - self.h, fill = 'blue')
-        self.canvas.create_text(self.x, self.y + self.h + 10, text=self.label, fill="black", font=('Helvetica 13 bold'))
         for i in self.arcs:
             i.show(self.canvas,self.x,self.y)
+        if dynamic: self.canvas.after(1,self.show)
+
  
 class PetriNet:
     '''
-        A petri net is a structure
+        Construct and simulate a Petri Net
+        Properties:
+            - transitions: dictionary of transitions
+            - places: list of places
+            - canvas: where to illustrate petri-net
+        Methods:
+            - deadlock_free : determine a current marking of a petri net can be fired
+            - run     : simulate a petri net
+            - reach   : find all transtions / construct a transition system.
     '''
     def __init__(self,transitions,places,canvas):
         self.transitions = transitions
@@ -252,7 +273,9 @@ def problem1a():
     )
 
     # petri_net = PetriNet(trans,places,canvas)
-    for i in trans: trans[i].show()
+    for i in trans: trans[i].show(False)
+    print('states:', [p.label for p in places])
+    print('transitions:', [t for t in trans])
     windows.after(OPENING_TIME,windows.destroy)
     [p.show() for p in places]
     windows.mainloop()
@@ -308,7 +331,7 @@ def problem1b():
         ),
     )
     petri_net = PetriNet(trans,places,canvas)
-    for i in trans: trans[i].show()
+    for i in trans: trans[i].show(False)
     try:
         sum = 0
         # Input
@@ -375,7 +398,7 @@ def problem1b_():
             canvas
         ),
     )
-    for i in trans: trans[i].show()
+    for i in trans: trans[i].show(False)
     petri_net = PetriNet(trans,places,canvas)
     try:
         for p in places:
@@ -436,8 +459,8 @@ def problem2(firings):
         ),
     )
 
-    [p.show() for p in places]
     for i in trans: trans[i].show()
+    [p.show() for p in places]
     # non-determistic choice:
     from random import choice
     firing_sequence = [choice(list(trans.keys())) for _ in range(firings)]
